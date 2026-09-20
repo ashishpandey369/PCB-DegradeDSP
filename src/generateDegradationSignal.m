@@ -19,15 +19,34 @@ function [t, current, state] = generateDegradationSignal(cfg)
 %   current - simulated leakage current in microampere
 %   state   - normalized degradation state (0 healthy -> 1 failure)
 
-arguments
-    cfg.spacing_mm (1,1) double {mustBePositive}
-    cfg.temperature_C (1,1) double
-    cfg.humidity_RH (1,1) double {mustBeGreaterThanOrEqual(cfg.humidity_RH,0),mustBeLessThanOrEqual(cfg.humidity_RH,100)}
-    cfg.voltage_V (1,1) double {mustBeNonnegative}
-    cfg.duration_s (1,1) double {mustBePositive}
-    cfg.fs_Hz (1,1) double {mustBePositive}
-    cfg.seed (1,1) double = 1
+% Validate the configuration explicitly. A previous v0.1 implementation used
+% an arguments block with dotted struct-field declarations, which MATLAB
+% does not accept for a struct input.
+requiredFields = {'spacing_mm','temperature_C','humidity_RH','voltage_V','duration_s','fs_Hz'};
+for i = 1:numel(requiredFields)
+    assert(isfield(cfg, requiredFields{i}), ...
+        'Missing cfg field: %s', requiredFields{i});
 end
+
+assert(isscalar(cfg.spacing_mm) && isnumeric(cfg.spacing_mm) && cfg.spacing_mm > 0, ...
+    'cfg.spacing_mm must be a positive numeric scalar.');
+assert(isscalar(cfg.temperature_C) && isnumeric(cfg.temperature_C), ...
+    'cfg.temperature_C must be a numeric scalar.');
+assert(isscalar(cfg.humidity_RH) && isnumeric(cfg.humidity_RH) && ...
+    cfg.humidity_RH >= 0 && cfg.humidity_RH <= 100, ...
+    'cfg.humidity_RH must be between 0 and 100.');
+assert(isscalar(cfg.voltage_V) && isnumeric(cfg.voltage_V) && cfg.voltage_V >= 0, ...
+    'cfg.voltage_V must be a nonnegative numeric scalar.');
+assert(isscalar(cfg.duration_s) && isnumeric(cfg.duration_s) && cfg.duration_s > 0, ...
+    'cfg.duration_s must be a positive numeric scalar.');
+assert(isscalar(cfg.fs_Hz) && isnumeric(cfg.fs_Hz) && cfg.fs_Hz > 0, ...
+    'cfg.fs_Hz must be a positive numeric scalar.');
+
+if ~isfield(cfg,'seed') || isempty(cfg.seed)
+    cfg.seed = 1;
+end
+assert(isscalar(cfg.seed) && isnumeric(cfg.seed), ...
+    'cfg.seed must be a numeric scalar.');
 
 rng(cfg.seed);
 
